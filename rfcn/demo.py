@@ -1,3 +1,4 @@
+# coding=utf-8
 # --------------------------------------------------------
 # Deformable Convolutional Networks
 # Copyright (c) 2017 Microsoft
@@ -45,6 +46,7 @@ args = parse_args()
 def main():
     # get symbol
     pprint.pprint(config)
+    # 仅仅跑RFCN，需要增加rfcn_only参数，即python ./rfcn/demo.py --rfcn_only，不然默认加载Deformable R-FCN
     config.symbol = 'resnet_v1_101_rfcn_dcn' if not args.rfcn_only else 'resnet_v1_101_rfcn'
     sym_instance = eval(config.symbol + '.' + config.symbol)()
     sym = sym_instance.get_symbol(config, is_train=False)

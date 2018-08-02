@@ -1,3 +1,4 @@
+# coding=utf-8
 # --------------------------------------------------------
 # Deformable Convolutional Networks
 # Copyright (c) 2017 Microsoft
@@ -285,6 +286,7 @@ class ROIIter(mx.io.DataIter):
         return {'data': data, 'label': label}
 
 
+# 锚点加载器
 class AnchorLoader(mx.io.DataIter):
 
     def __init__(self, feat_sym, roidb, cfg, batch_size=1, shuffle=False, ctx=None, work_load_list=None,

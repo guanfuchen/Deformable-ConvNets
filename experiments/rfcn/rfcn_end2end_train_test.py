@@ -1,3 +1,4 @@
+# coding=utf-8
 # --------------------------------------------------------
 # Deformable Convolutional Networks
 # Copyright (c) 2017 Microsoft
@@ -16,6 +17,7 @@ import train_end2end
 import test
 
 if __name__ == "__main__":
+    # 开启训练end to end
     train_end2end.main()
     test.main()
 

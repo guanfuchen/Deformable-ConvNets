@@ -4,6 +4,7 @@ output_path: "./output/rfcn/voc"
 symbol: resnet_v1_101_rfcn
 gpus: '0,1,2,3'
 CLASS_AGNOSTIC: true
+# 训练的尺度大小限制
 SCALES:
 - 600
 - 1000
@@ -49,35 +50,46 @@ network:
   NUM_ANCHORS: 9
 dataset:
   NUM_CLASSES: 21
+  # 这里的数据集类型为PascalVOC
   dataset: PascalVOC
+  # 数据集具体目录
   dataset_path: "./data/VOCdevkit"
+  # 不同的图像集用+分割开来，这里图像集包括2007_trainval和2012_trainval数据集
   image_set: 2007_trainval+2012_trainval
+  # 数据集根目录
   root_path: "./data"
   test_image_set: 2007_test
   proposal: rpn
 TRAIN:
+  # 训练学习率和lr_step
   lr: 0.0005
   lr_step: '4.83'
   warmup: true
   warmup_lr: 0.00005
   # typically we will use 4000 warmup step for single GPU on VOC
   warmup_step: 1000
+  # 训练开始的周期
   begin_epoch: 0
+  # 训练结束的周期
   end_epoch: 7
+  # 模型前缀，以模型+数据集为命名
   model_prefix: 'rfcn_voc'
   # whether resume training
   RESUME: false
   # whether flip image
+  # 是否对称图像
   FLIP: true
   # whether shuffle image
   SHUFFLE: true
   # whether use OHEM
   ENABLE_OHEM: true
   # size of images for each device, 2 for rcnn, 1 for rpn and e2e
+  # 每一个GPU设备中训练的图像大小，RCNN网络训练位2，RPN网络和e2e网络训练为1
   BATCH_IMAGES: 1
   # e2e changes behavior of anchor loader and metric
   END2END: true
   # group images with similar aspect ratio
+  # 将相似的aspect ratio图像组合在一起
   ASPECT_GROUPING: true
   # R-CNN
   # rcnn rois batch size
@@ -85,7 +97,9 @@ TRAIN:
   BATCH_ROIS_OHEM: 128
   # rcnn rois sampling params
   FG_FRACTION: 0.25
+  # rcnn rois采样参数中前景overlapes阈值0.5
   FG_THRESH: 0.5
+  # rcnn rois采样参数中背景最大和最小的overlapes
   BG_THRESH_HI: 0.5
   BG_THRESH_LO: 0.0
   # rcnn bounding box regression params
@@ -134,6 +148,7 @@ TEST:
   # use rpn to generate proposal
   HAS_RPN: true
   # size of images for each device
+  # 每一个GPU设备处理的图像batch
   BATCH_IMAGES: 1
   # RPN proposal
   CXX_PROPOSAL: false

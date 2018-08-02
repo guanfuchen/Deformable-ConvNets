@@ -1,3 +1,4 @@
+# coding=utf-8
 # --------------------------------------------------------
 # Deformable Convolutional Networks
 # Copyright (c) 2017 Microsoft
@@ -53,12 +54,14 @@ from utils.create_logger import create_logger
 
 def main():
     print ('Called with argument:', args)
+    # 配置文件中gpu使用ID
     ctx = [mx.gpu(int(i)) for i in config.gpus.split(',')]
     logger, output_path = create_logger(config.output_path, args.cfg, config.dataset.image_set)
     shutil.copy2(os.path.join(curr_path, 'symbols', config.symbol + '.py'), output_path)
 
     prefix = os.path.join(output_path, 'rfcn')
     logging.info('########## TRAIN rfcn WITH IMAGENET INIT AND RPN DETECTION')
+    # 训练R-FCN
     train_rcnn(config, config.dataset.dataset, config.dataset.image_set, config.dataset.root_path, config.dataset.dataset_path,
                args.frequent, config.default.kvstore, config.TRAIN.FLIP, config.TRAIN.SHUFFLE, config.TRAIN.RESUME,
                ctx, config.network.pretrained, config.network.pretrained_epoch, prefix, config.TRAIN.begin_epoch,

@@ -1,3 +1,4 @@
+# coding=utf-8
 # --------------------------------------------------------
 # Deformable Convolutional Networks
 # Copyright (c) 2017 Microsoft
@@ -55,7 +56,9 @@ from utils.PrefetchingIter import PrefetchingIter
 from utils.lr_scheduler import WarmupMultiFactorScheduler
 
 
+# RFCN网络端到端训练
 def train_net(args, ctx, pretrained, epoch, prefix, begin_epoch, end_epoch, lr, lr_step):
+    # 创建logger和对应的输出路径
     logger, final_output_path = create_logger(config.output_path, args.cfg, config.dataset.image_set)
     prefix = os.path.join(final_output_path, prefix)
 
@@ -63,9 +66,11 @@ def train_net(args, ctx, pretrained, epoch, prefix, begin_epoch, end_epoch, lr, 
     shutil.copy2(os.path.join(curr_path, 'symbols', config.symbol + '.py'), final_output_path)
     sym_instance = eval(config.symbol + '.' + config.symbol)()
     sym = sym_instance.get_symbol(config, is_train=True)
+    # 特征symbol，从网络sym中获取rpn_cls_score_output
     feat_sym = sym.get_internals()['rpn_cls_score_output']
 
     # setup multi-gpu
+    # 使能多GPU训练，每一张卡训练一个batch
     batch_size = len(ctx)
     input_batch_size = config.TRAIN.BATCH_IMAGES * batch_size
 
@@ -74,13 +79,18 @@ def train_net(args, ctx, pretrained, epoch, prefix, begin_epoch, end_epoch, lr, 
     logger.info('training config:{}\n'.format(pprint.pformat(config)))
 
     # load dataset and prepare imdb for training
+    # 加载数据集同时准备训练的imdb，使用+分割不同的图像数据集，比如2007_trainval+2012_trainval
     image_sets = [iset for iset in config.dataset.image_set.split('+')]
+    # load gt roidb加载gt roidb，根据数据集类型，图像集具体子类，数据集根目录和数据集路径，同时配置相关TRAIN为FLIP来增广数据
     roidbs = [load_gt_roidb(config.dataset.dataset, image_set, config.dataset.root_path, config.dataset.dataset_path,
                             flip=config.TRAIN.FLIP)
               for image_set in image_sets]
+    # 合并不同的roidb
     roidb = merge_roidb(roidbs)
+    # 根据配置文件中对应的过滤规则来滤出roi
     roidb = filter_roidb(roidb, config)
     # load training data
+    # 加载训练数据，anchor Loader为对应分类和回归的锚点加载，通过对应的roidb，查找对应的正负样本的锚点，该生成器需要参数锚点尺度，ratios和对应的feature的stride
     train_data = AnchorLoader(feat_sym, roidb, config, batch_size=input_batch_size, shuffle=config.TRAIN.SHUFFLE, ctx=ctx,
                               feat_stride=config.network.RPN_FEAT_STRIDE, anchor_scales=config.network.ANCHOR_SCALES,
                               anchor_ratios=config.network.ANCHOR_RATIOS, aspect_grouping=config.TRAIN.ASPECT_GROUPING)
@@ -164,6 +174,7 @@ def train_net(args, ctx, pretrained, epoch, prefix, begin_epoch, end_epoch, lr, 
 
 def main():
     print('Called with argument:', args)
+    # 训练网络，从预训练模型，预训练epoch和model_prefix
     ctx = [mx.gpu(int(i)) for i in config.gpus.split(',')]
     train_net(args, ctx, config.network.pretrained, config.network.pretrained_epoch, config.TRAIN.model_prefix,
               config.TRAIN.begin_epoch, config.TRAIN.end_epoch, config.TRAIN.lr, config.TRAIN.lr_step)

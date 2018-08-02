@@ -1,3 +1,4 @@
+# coding=utf-8
 # --------------------------------------------------------
 # Deformable Convolutional Networks
 # Copyright (c) 2017 Microsoft
@@ -13,12 +14,14 @@ from operator_py.proposal_target import *
 from operator_py.box_annotator_ohem import *
 
 
+# resnet v1 101 rfcn
 class resnet_v1_101_rfcn(Symbol):
 
     def __init__(self):
         """
         Use __init__ to define parameter network needs
         """
+        Symbol.__init__(self)
         self.eps = 1e-5
         self.use_global_stats = True
         self.workspace = 512
@@ -691,17 +694,23 @@ class resnet_v1_101_rfcn(Symbol):
             data=rpn_relu, kernel=(1, 1), pad=(0, 0), num_filter=4 * num_anchors, name="rpn_bbox_pred")
         return rpn_cls_score, rpn_bbox_pred
 
+    # 获得resnet mxnet的symbol也就是对应的模型，cfg为配置项，is_train为训练与否
     def get_symbol(self, cfg, is_train=True):
 
         # config alias for convenient
+        # 方便起见设置配置项的属性别名
         num_classes = cfg.dataset.NUM_CLASSES
         num_reg_classes = (2 if cfg.CLASS_AGNOSTIC else num_classes)
         num_anchors = cfg.network.NUM_ANCHORS
 
         # input init
+        # 获得的网络是需要训练的网络
         if is_train:
+            # 训练网络输入数据
             data = mx.sym.Variable(name="data")
+            # 训练网络image info
             im_info = mx.sym.Variable(name="im_info")
+            # 训练网络ground truth bounding boxes
             gt_boxes = mx.sym.Variable(name="gt_boxes")
             rpn_label = mx.sym.Variable(name='label')
             rpn_bbox_target = mx.sym.Variable(name='bbox_target')
@@ -711,29 +720,37 @@ class resnet_v1_101_rfcn(Symbol):
             im_info = mx.sym.Variable(name="im_info")
 
         # shared convolutional layers
+        # 共享的卷积特征resnet_v1_conv4
         conv_feat = self.get_resnet_v1_conv4(data)
         # res5
+        # res5特征
         relu1 = self.get_resnet_v1_conv5(conv_feat)
 
+        # 从conv_feat获取RPN区域建议
         rpn_cls_score, rpn_bbox_pred = self.get_rpn(conv_feat, num_anchors)
 
         if is_train:
             # prepare rpn data
+            # 训练前准备rpn数据
             rpn_cls_score_reshape = mx.sym.Reshape(
                 data=rpn_cls_score, shape=(0, 2, -1, 0), name="rpn_cls_score_reshape")
 
             # classification
+            # RPN分类prob，使用softmab转换为prob，对应的标签为rpn label
             rpn_cls_prob = mx.sym.SoftmaxOutput(data=rpn_cls_score_reshape, label=rpn_label, multi_output=True,
                                                    normalization='valid', use_ignore=True, ignore_label=-1, name="rpn_cls_prob")
             # bounding box regression
+            # RPN回归框系数，loss使用smooth l1，由rpn_bbox_pred和rpn_bbox_target相比较
             rpn_bbox_loss_ = rpn_bbox_weight * mx.sym.smooth_l1(name='rpn_bbox_loss_', scalar=3.0, data=(rpn_bbox_pred - rpn_bbox_target))
             rpn_bbox_loss = mx.sym.MakeLoss(name='rpn_bbox_loss', data=rpn_bbox_loss_, grad_scale=1.0 / cfg.TRAIN.RPN_BATCH_SIZE)
 
             # ROI proposal
+            # ROI区域建议act激活rpn_cls_act
             rpn_cls_act = mx.sym.SoftmaxActivation(
                 data=rpn_cls_score_reshape, mode="channel", name="rpn_cls_act")
             rpn_cls_act_reshape = mx.sym.Reshape(
                 data=rpn_cls_act, shape=(0, 2 * num_anchors, -1, 0), name='rpn_cls_act_reshape')
+            # 训练使用CXX_PROPOSAL获得的rois和不经过Proposal的rois
             if cfg.TRAIN.CXX_PROPOSAL:
                 rois = mx.contrib.sym.Proposal(
                     cls_prob=rpn_cls_act_reshape, bbox_pred=rpn_bbox_pred, im_info=im_info, name='rois',
@@ -748,6 +765,7 @@ class resnet_v1_101_rfcn(Symbol):
                     rpn_pre_nms_top_n=cfg.TRAIN.RPN_PRE_NMS_TOP_N, rpn_post_nms_top_n=cfg.TRAIN.RPN_POST_NMS_TOP_N,
                     threshold=cfg.TRAIN.RPN_NMS_THRESH, rpn_min_size=cfg.TRAIN.RPN_MIN_SIZE)
             # ROI proposal target
+            # ROI区域建议目标
             gt_boxes_reshape = mx.sym.Reshape(data=gt_boxes, shape=(-1, 5), name='gt_boxes_reshape')
             rois, label, bbox_target, bbox_weight = mx.sym.Custom(rois=rois, gt_boxes=gt_boxes_reshape,
                                                                   op_type='proposal_target',
@@ -782,10 +800,12 @@ class resnet_v1_101_rfcn(Symbol):
 
 
         # conv_new_1
+        # 通过最后一层的卷积5来获取object分类结果
         conv_new_1 = mx.sym.Convolution(data=relu1, kernel=(1, 1), num_filter=1024, name="conv_new_1", lr_mult=3.0)
         relu_new_1 = mx.sym.Activation(data=conv_new_1, act_type='relu', name='relu1')
 
         # rfcn_cls/rfcn_bbox
+        # 最后的rfcn位置敏感的卷积cls和bbox
         rfcn_cls = mx.sym.Convolution(data=relu_new_1, kernel=(1, 1), num_filter=7*7*num_classes, name="rfcn_cls")
         rfcn_bbox = mx.sym.Convolution(data=relu_new_1, kernel=(1, 1), num_filter=7*7*4*num_reg_classes, name="rfcn_bbox")
         psroipooled_cls_rois = mx.contrib.sym.PSROIPooling(name='psroipooled_cls_rois', data=rfcn_cls, rois=rois, group_size=7, pooled_size=7,
@@ -798,6 +818,7 @@ class resnet_v1_101_rfcn(Symbol):
         bbox_pred = mx.sym.Reshape(name='bbox_pred_reshape', data=bbox_pred, shape=(-1, 4 * num_reg_classes))
 
         if is_train:
+            # 使能在线难样本训练
             if cfg.TRAIN.ENABLE_OHEM:
                 labels_ohem, bbox_weights_ohem = mx.sym.Custom(op_type='BoxAnnotatorOHEM', num_classes=num_classes,
                                                                num_reg_classes=num_reg_classes, roi_per_img=cfg.TRAIN.BATCH_ROIS_OHEM,

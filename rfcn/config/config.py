@@ -1,3 +1,4 @@
+# coding=utf-8
 # --------------------------------------------------------
 # Deformable Convolutional Networks
 # Copyright (c) 2017 Microsoft
@@ -26,6 +27,7 @@ config.SCALES = [(600, 1000)]  # first is scale (the shorter side); second is ma
 
 # default training
 config.default = edict()
+# 打印训练日志频率
 config.default.frequent = 20
 config.default.kvstore = 'device'
 
