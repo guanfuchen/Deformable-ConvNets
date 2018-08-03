@@ -1,3 +1,4 @@
+# 该文件是训练的配置参数，相当于caffe中的solver.protxt
 ---
 MXNET_VERSION: "mxnet"
 output_path: "./output/rfcn/voc"
@@ -82,6 +83,7 @@ TRAIN:
   # whether shuffle image
   SHUFFLE: true
   # whether use OHEM
+  # 是否使用OHEM，在线困难样本训练方法
   ENABLE_OHEM: true
   # size of images for each device, 2 for rcnn, 1 for rpn and e2e
   # 每一个GPU设备中训练的图像大小，RCNN网络训练位2，RPN网络和e2e网络训练为1
