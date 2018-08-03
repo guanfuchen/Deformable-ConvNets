@@ -1,3 +1,4 @@
+# 该文件是训练的配置参数，相当于caffe中的solver.protxt
 ---
 MXNET_VERSION: "mxnet"
 # 设置网络模型日志等相关输出路径，一般为./output/rfcn/voc，也就是./output/$Net/$Dataset
@@ -61,6 +62,7 @@ dataset:
   dataset_path: "./data/VOCdevkit"
   # 不同的图像集用+分割开来，这里图像集包括2007_trainval和2012_trainval数据集
   image_set: 2007_trainval+2012_trainval
+#  image_set: 2007_trainval
   # 数据集根目录
   root_path: "./data"
   # 测试图像数据集为2007_test
@@ -91,6 +93,7 @@ TRAIN:
   # 是否随机图像处理顺序
   SHUFFLE: true
   # whether use OHEM
+  # 是否使用OHEM，在线困难样本训练方法
   ENABLE_OHEM: true
   # size of images for each device, 2 for rcnn, 1 for rpn and e2e
   # 每一个GPU设备中训练的图像大小，RCNN网络训练位2，RPN网络和e2e网络训练为1
@@ -103,15 +106,20 @@ TRAIN:
   # R-CNN
   # rcnn rois batch size
   BATCH_ROIS: -1
+  # Batch size for ohem
+  # ROIS OHEM的batch_size
   BATCH_ROIS_OHEM: 128
   # rcnn rois sampling params
+  # RCNN中前景背景采样的比例，其中前景和背景比例为1:3
   FG_FRACTION: 0.25
   # rcnn rois采样参数中前景overlapes阈值0.5
   FG_THRESH: 0.5
   # rcnn rois采样参数中背景最大和最小的overlapes
+  # RCNN ROIS OHEM中的背景IOU阈值high value和lower value
   BG_THRESH_HI: 0.5
   BG_THRESH_LO: 0.0
   # rcnn bounding box regression params
+  # RCNN回归阈值
   BBOX_REGRESSION_THRESH: 0.5
   BBOX_WEIGHTS:
   - 1.0
@@ -121,9 +129,12 @@ TRAIN:
 
   # RPN anchor loader
   # rpn anchors batch size
+  # RPN锚点batch size
   RPN_BATCH_SIZE: 256
   # rpn anchors sampling params
+  # RPN前景背景比例为1:1
   RPN_FG_FRACTION: 0.5
+  # RPN正样本覆盖IOU为0.7，负样本覆盖IOU为0.3
   RPN_POSITIVE_OVERLAP: 0.7
   RPN_NEGATIVE_OVERLAP: 0.3
   RPN_CLOBBER_POSITIVES: false
@@ -136,12 +147,15 @@ TRAIN:
   RPN_POSITIVE_WEIGHT: -1.0
   # used for end2end training
   # RPN proposal
+  # RPN区域建议，在RPN生成后需要先进行一次NMS，去除一些高度关联的ROI，其中相应的阈值为0.7
   CXX_PROPOSAL: false
   RPN_NMS_THRESH: 0.7
+  # 生成的RPN建议个数为6000，选取置信度最高的300个ROI
   RPN_PRE_NMS_TOP_N: 6000
   RPN_POST_NMS_TOP_N: 300
   RPN_MIN_SIZE: 0
   # approximate bounding box regression
+  # BBOX计算前需要正则化，通过MEANS和STDS正则化
   BBOX_NORMALIZATION_PRECOMPUTED: true
   BBOX_MEANS:
   - 0.0

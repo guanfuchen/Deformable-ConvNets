@@ -52,6 +52,7 @@ dataset:
   dataset: PascalVOC
   dataset_path: "./data/VOCdevkit"
   image_set: 2007_trainval+2012_trainval
+#  image_set: 2007_trainval
   root_path: "./data"
   test_image_set: 2007_test
   proposal: rpn
