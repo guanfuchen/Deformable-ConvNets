@@ -1,6 +1,8 @@
 ---
 MXNET_VERSION: "mxnet"
+# 设置网络模型日志等相关输出路径，一般为./output/rfcn/voc，也就是./output/$Net/$Dataset
 output_path: "./output/rfcn/voc"
+# 训练的网络的mxnet symbol
 symbol: resnet_v1_101_rfcn
 gpus: '0,1,2,3'
 CLASS_AGNOSTIC: true
@@ -10,8 +12,10 @@ SCALES:
 - 1000
 default:
   frequent: 100
+  # kvstore为device
   kvstore: device
 network:
+  # 网络与训练模型路径=pretrained+pretrained_epoch
   pretrained: "./model/pretrained_model/resnet_v1_101"
   pretrained_epoch: 0
   PIXEL_MEANS:
@@ -49,6 +53,7 @@ network:
   - 32
   NUM_ANCHORS: 9
 dataset:
+  # 数据集目标检测的类别
   NUM_CLASSES: 21
   # 这里的数据集类型为PascalVOC
   dataset: PascalVOC
@@ -58,7 +63,9 @@ dataset:
   image_set: 2007_trainval+2012_trainval
   # 数据集根目录
   root_path: "./data"
+  # 测试图像数据集为2007_test
   test_image_set: 2007_test
+  # 模型区域建议产生于selective search或者RPN网络
   proposal: rpn
 TRAIN:
   # 训练学习率和lr_step
@@ -75,11 +82,13 @@ TRAIN:
   # 模型前缀，以模型+数据集为命名
   model_prefix: 'rfcn_voc'
   # whether resume training
+  # 是否继续训练
   RESUME: false
   # whether flip image
   # 是否对称图像
   FLIP: true
   # whether shuffle image
+  # 是否随机图像处理顺序
   SHUFFLE: true
   # whether use OHEM
   ENABLE_OHEM: true

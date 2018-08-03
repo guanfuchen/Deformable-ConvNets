@@ -906,22 +906,30 @@ class resnet_v1_101_rfcn(Symbol):
         self.sym = group
         return group
 
+    # 获取rfcn模型symbol，输入cfg配置相关的dict构造对应的模型symbol以及is_train根据是否训练配置
     def get_symbol_rfcn(self, cfg, is_train=True):
 
         # config alias for convenient
+        # 配置相关选项的别名为了方便
         num_classes = cfg.dataset.NUM_CLASSES
+        # RPN网络是否需要根据类进行回归，默认是不通过类回归，也就是仅仅区分前景和背景，那么需要回归的类别数也就是2
         num_reg_classes = (2 if cfg.CLASS_AGNOSTIC else num_classes)
 
         # input init
+        # 网络训练需要进行的相关设置
         if is_train:
+            # 网络训练前需要大量的数据data、感兴趣区域rois、标签label、bbox_target回归目标和bbox_weight回归weight
             data = mx.symbol.Variable(name="data")
             rois = mx.symbol.Variable(name='rois')
             label = mx.symbol.Variable(name='label')
             bbox_target = mx.symbol.Variable(name='bbox_target')
             bbox_weight = mx.symbol.Variable(name='bbox_weight')
             # reshape input
+            # 将输入rois reshape到固定的维度，这里为（N，5），其中5包括rois相应的xmin、ymin、xmax和ymax等关联以及对应的cls
             rois = mx.symbol.Reshape(data=rois, shape=(-1, 5), name='rois_reshape')
+            # 标签也是对应的（N，），也就是每一个rois的真实标签
             label = mx.symbol.Reshape(data=label, shape=(-1,), name='label_reshape')
+            # bbox_target表示最后需要回归到的bounding box
             bbox_target = mx.symbol.Reshape(data=bbox_target, shape=(-1, 4 * num_reg_classes), name='bbox_target_reshape')
             bbox_weight = mx.symbol.Reshape(data=bbox_weight, shape=(-1, 4 * num_reg_classes), name='bbox_weight_reshape')
         else:
@@ -931,6 +939,7 @@ class resnet_v1_101_rfcn(Symbol):
             rois = mx.symbol.Reshape(data=rois, shape=(-1, 5), name='rois_reshape')
 
         # shared convolutional layers
+        # 共享的卷积特征，其中主要将resnet_conv4输出
         conv_feat = self.get_resnet_v1_conv4(data)
         relu1 = self.get_resnet_v1_conv5(conv_feat)
 

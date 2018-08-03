@@ -29,6 +29,7 @@ config.SCALES = [(600, 1000)]  # first is scale (the shorter side); second is ma
 config.default = edict()
 # 打印训练日志频率
 config.default.frequent = 20
+# kvstore
 config.default.kvstore = 'device'
 
 # network related params

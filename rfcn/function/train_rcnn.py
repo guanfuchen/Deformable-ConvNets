@@ -1,3 +1,4 @@
+# coding=utf-8
 # --------------------------------------------------------
 # Deformable Convolutional Networks
 # Copyright (c) 2017 Microsoft
@@ -28,18 +29,22 @@ from utils.PrefetchingIter import PrefetchingIter
 from utils.lr_scheduler import WarmupMultiFactorScheduler
 
 
+# 训练RCNN网络模型
 def train_rcnn(cfg, dataset, image_set, root_path, dataset_path,
                frequent, kvstore, flip, shuffle, resume,
                ctx, pretrained, epoch, prefix, begin_epoch, end_epoch,
                train_shared, lr, lr_step, proposal, logger=None, output_path=None):
     # set up logger
+    # 首先需要加载日志输出对象
     if not logger:
         logging.basicConfig()
         logger = logging.getLogger()
         logger.setLevel(logging.INFO)
 
     # load symbol
+    # 加载对应的目标检测框架mxnet模型symbol
     sym_instance = eval(cfg.symbol + '.' + cfg.symbol)()
+    # sym_instance获取对应的rfcn模型，并且设置is_train为True，表示加载的模型需要对应train的模型
     sym = sym_instance.get_symbol_rfcn(cfg, is_train=True)
 
     # setup multi-gpu
