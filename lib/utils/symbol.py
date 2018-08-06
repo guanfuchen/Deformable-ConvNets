@@ -1,3 +1,4 @@
+# coding=utf-8
 # --------------------------------------------------------
 # Deformable Convolutional Networks
 # Copyright (c) 2017 Microsoft
@@ -41,6 +42,15 @@ class Symbol:
         self.aux_shape_dict = dict(zip(self.sym.list_auxiliary_states(), aux_shape))
 
     def check_parameter_shapes(self, arg_params, aux_params, data_shape_dict, is_train=True):
+        """
+        检查参数shapes，通过对arg_params、aug_params和对应的data_shape_dict进行查看对比
+        :param arg_params:
+        :param aux_params:
+        :param data_shape_dict:
+        :param is_train:
+        :return:
+        """
+        # sym中的每一个参数
         for k in self.sym.list_arguments():
             if k in data_shape_dict or (False if is_train else 'label' in k):
                 continue

@@ -1,3 +1,4 @@
+# coding=utf-8
 # --------------------------------------------------------
 # Deformable Convolutional Networks
 # Copyright (c) 2017 Microsoft
@@ -34,11 +35,20 @@ def get_rcnn_names(cfg):
 
 
 class RPNAccMetric(mx.metric.EvalMetric):
+    """
+    RPN Acc评价指标
+    """
     def __init__(self):
         super(RPNAccMetric, self).__init__('RPNAcc')
         self.pred, self.label = get_rpn_names()
 
     def update(self, labels, preds):
+        """
+        RPN精度评价指标，输入labels和preds，对相应的labels和preds进行cross entropy loss计算
+        :param labels:
+        :param preds:
+        :return:
+        """
         pred = preds[self.pred.index('rpn_cls_prob')]
         label = labels[self.label.index('rpn_label')]
 

@@ -1,3 +1,4 @@
+# coding=utf-8
 # --------------------------------------------------------
 # Deformable Convolutional Networks
 # Copyright (c) 2017 Microsoft
@@ -20,12 +21,17 @@ class WarmupMultiFactorScheduler(LRScheduler):
     Parameters
     ----------
     step: list of int
-        schedule learning rate after n updates
+        schedule learning rate after n updates 在n个更新后调整学习率
     factor: float
-        the factor for reducing the learning rate
+        the factor for reducing the learning rate 降低学习率的因子
     """
     def __init__(self, step, factor=1, warmup=False, warmup_lr=0, warmup_step=0):
         super(WarmupMultiFactorScheduler, self).__init__()
+        print('step:', step)
+        print('factor:', factor)
+        print('warmup:', warmup)
+        print('warmup_lr:', warmup_lr)
+        print('warmup_step:', warmup_step)
         assert isinstance(step, list) and len(step) >= 1
         for i, _step in enumerate(step):
             if i != 0 and step[i] <= step[i-1]:

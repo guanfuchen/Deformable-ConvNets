@@ -33,6 +33,7 @@ def parse_args():
     update_config(args.cfg)
 
     # training
+    # 训练回调频率
     parser.add_argument('--frequent', help='frequency of logging', default=config.default.frequent, type=int)
     args = parser.parse_args()
     return args
@@ -106,17 +107,21 @@ def train_net(args, ctx, pretrained, epoch, prefix, begin_epoch, end_epoch, lr, 
     sym_instance.infer_shape(data_shape_dict)
 
     # load and initialize params
+    # 加载并且初始化参数，如果训练中是继续上次的训练，也就是RESUME这一flag设置为True
     if config.TRAIN.RESUME:
         print('continue training from ', begin_epoch)
+        # 从前缀和being_epoch中加载RESUME的arg参数和aux参数，同时需要转换为GPU NDArray
         arg_params, aux_params = load_param(prefix, begin_epoch, convert=True)
     else:
         arg_params, aux_params = load_param(pretrained, epoch, convert=True)
         sym_instance.init_weight(config, arg_params, aux_params)
 
     # check parameter shapes
+    # 检查相关参数的shapes
     sym_instance.check_parameter_shapes(arg_params, aux_params, data_shape_dict)
 
     # create solver
+    # 创造求解器
     fixed_param_prefix = config.network.FIXED_PARAMS
     data_names = [k[0] for k in train_data.provide_data_single]
     label_names = [k[0] for k in train_data.provide_label_single]
@@ -130,31 +135,46 @@ def train_net(args, ctx, pretrained, epoch, prefix, begin_epoch, end_epoch, lr, 
 
     # decide training params
     # metric
+    # 以下主要是RPN和RCNN相关的一些评价指标
     rpn_eval_metric = metric.RPNAccMetric()
     rpn_cls_metric = metric.RPNLogLossMetric()
     rpn_bbox_metric = metric.RPNL1LossMetric()
     eval_metric = metric.RCNNAccMetric(config)
     cls_metric = metric.RCNNLogLossMetric(config)
     bbox_metric = metric.RCNNL1LossMetric(config)
+    # mxnet中合成的评估指标，可以增加以上所有的评估指标，包括rpn_eval_metrix、rpn_cls_metric、rpn_bbox_metric和rcnn_eval_metric、rcnn_cls_metric、rcnn_bbox_metric
     eval_metrics = mx.metric.CompositeEvalMetric()
     # rpn_eval_metric, rpn_cls_metric, rpn_bbox_metric, eval_metric, cls_metric, bbox_metric
     for child_metric in [rpn_eval_metric, rpn_cls_metric, rpn_bbox_metric, eval_metric, cls_metric, bbox_metric]:
         eval_metrics.add(child_metric)
+
     # callback
+    # batch后的callback回调以及epoch后的callback回调
+    # batch_end_callback是在训练一定batch_size后进行的相应回调，回调频率为frequent
     batch_end_callback = callback.Speedometer(train_data.batch_size, frequent=args.frequent)
+    # means和stds，如果BBOX是类无关的，那么means为复制means两个，否则复制数量为NUM_CLASSES
     means = np.tile(np.array(config.TRAIN.BBOX_MEANS), 2 if config.CLASS_AGNOSTIC else config.dataset.NUM_CLASSES)
     stds = np.tile(np.array(config.TRAIN.BBOX_STDS), 2 if config.CLASS_AGNOSTIC else config.dataset.NUM_CLASSES)
+    # epoch为一个周期结束后的回调
     epoch_end_callback = [mx.callback.module_checkpoint(mod, prefix, period=1, save_optimizer_states=True), callback.do_checkpoint(prefix, means, stds)]
     # decide learning rate
+    # 以下主要根据不同的学习率调整策略来决定学习率，这里如voc中默认的初始lr为0.0005
     base_lr = lr
+    # 学习率调整因子
     lr_factor = config.TRAIN.lr_factor
+    # 学习率调整周期，lr_step一般格式为3, 5，表示在3和5周期中进行学习率调整
     lr_epoch = [float(epoch) for epoch in lr_step.split(',')]
+    # 如果当前周期大于begin_epoch那么lr_epoch_diff为epoch-begin_epoch
     lr_epoch_diff = [epoch - begin_epoch for epoch in lr_epoch if epoch > begin_epoch]
+    print('lr_epoch', lr_epoch, 'begin_epoch', begin_epoch)
+    # 通过当前的epoch来计算当前应该具有的lr
     lr = base_lr * (lr_factor ** (len(lr_epoch) - len(lr_epoch_diff)))
     lr_iters = [int(epoch * len(roidb) / batch_size) for epoch in lr_epoch_diff]
     print('lr', lr, 'lr_epoch_diff', lr_epoch_diff, 'lr_iters', lr_iters)
+    # learning rate调整机制，warmup multi factor scheduler预训练多因子调整器
     lr_scheduler = WarmupMultiFactorScheduler(lr_iters, lr_factor, config.TRAIN.warmup, config.TRAIN.warmup_lr, config.TRAIN.warmup_step)
     # optimizer
+    # 优化器参数，包含momentum、wd、lr、lr_scheduler、rescale_grad和clip_gradient
     optimizer_params = {'momentum': config.TRAIN.momentum,
                         'wd': config.TRAIN.wd,
                         'learning_rate': lr,
@@ -163,9 +183,11 @@ def train_net(args, ctx, pretrained, epoch, prefix, begin_epoch, end_epoch, lr, 
                         'clip_gradient': None}
 
     if not isinstance(train_data, PrefetchingIter):
+        print('!!!train_data is not PrefetchingIter!!!')
         train_data = PrefetchingIter(train_data)
 
     # train
+    # 模型训练过程，输入train_data，评估指标包括eval_metrics等一系列指标，每一个epoch结束后进入epoch_end_callback，每一个batch结束后进入batch_end_callback，优化器使用sgd，同时优化参数、输入参数和辅助参数以及begin周期和end周期
     mod.fit(train_data, eval_metric=eval_metrics, epoch_end_callback=epoch_end_callback,
             batch_end_callback=batch_end_callback, kvstore=config.default.kvstore,
             optimizer='sgd', optimizer_params=optimizer_params,

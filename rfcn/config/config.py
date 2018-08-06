@@ -29,7 +29,7 @@ config.SCALES = [(600, 1000)]  # first is scale (the shorter side); second is ma
 config.default = edict()
 # 打印训练日志频率
 config.default.frequent = 20
-# kvstore
+# config中的kvstore
 config.default.kvstore = 'device'
 
 # network related params
@@ -58,12 +58,19 @@ config.dataset.NUM_CLASSES = 21
 
 config.TRAIN = edict()
 
+# 默认的训练lr为0
 config.TRAIN.lr = 0
+# 学习率更新step
 config.TRAIN.lr_step = ''
+# 学习率更新factor
 config.TRAIN.lr_factor = 0.1
+# 是否开启warmup
 config.TRAIN.warmup = False
+# 开启warmup后的默认学习率
 config.TRAIN.warmup_lr = 0
+# 开启warmup后的默认学习率step
 config.TRAIN.warmup_step = 0
+# 训练sgd动量参数
 config.TRAIN.momentum = 0.9
 config.TRAIN.wd = 0.0005
 config.TRAIN.begin_epoch = 0
@@ -97,6 +104,7 @@ config.TRAIN.FLIP = True
 # whether shuffle image
 config.TRAIN.SHUFFLE = True
 # whether use OHEM
+# 是否使用OHEM，默认config关闭OHEM在线困难样例挖掘
 config.TRAIN.ENABLE_OHEM = False
 # size of images for each device, 2 for rcnn, 1 for rpn and e2e
 config.TRAIN.BATCH_IMAGES = 2

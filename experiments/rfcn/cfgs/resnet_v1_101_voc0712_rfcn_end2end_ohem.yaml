@@ -1,9 +1,7 @@
 # 该文件是训练的配置参数，相当于caffe中的solver.protxt
 ---
 MXNET_VERSION: "mxnet"
-# 设置网络模型日志等相关输出路径，一般为./output/rfcn/voc，也就是./output/$Net/$Dataset
 output_path: "./output/rfcn/voc"
-# 训练的网络的mxnet symbol
 symbol: resnet_v1_101_rfcn
 gpus: '0,1,2,3'
 CLASS_AGNOSTIC: true
@@ -12,11 +10,10 @@ SCALES:
 - 600
 - 1000
 default:
+  # 训练的batch回调频率
   frequent: 100
-  # kvstore为device
   kvstore: device
 network:
-  # 网络与训练模型路径=pretrained+pretrained_epoch
   pretrained: "./model/pretrained_model/resnet_v1_101"
   pretrained_epoch: 0
   PIXEL_MEANS:
@@ -54,43 +51,47 @@ network:
   - 32
   NUM_ANCHORS: 9
 dataset:
-  # 数据集目标检测的类别
   NUM_CLASSES: 21
   # 这里的数据集类型为PascalVOC
   dataset: PascalVOC
   # 数据集具体目录
   dataset_path: "./data/VOCdevkit"
   # 不同的图像集用+分割开来，这里图像集包括2007_trainval和2012_trainval数据集
-  image_set: 2007_trainval+2012_trainval
-#  image_set: 2007_trainval
+#  image_set: 2007_trainval+2012_trainval
+  image_set: 2007_trainval
   # 数据集根目录
   root_path: "./data"
-  # 测试图像数据集为2007_test
   test_image_set: 2007_test
-  # 模型区域建议产生于selective search或者RPN网络
   proposal: rpn
 TRAIN:
   # 训练学习率和lr_step
   lr: 0.0005
-  lr_step: '4.83'
+#  lr_step: '4.83'
+# 在多少step后进行更新学习率，需要大于begin_epoch
+  lr_step: '10'
+  # 是否开启warmup
   warmup: true
+  # warmup学习率
   warmup_lr: 0.00005
   # typically we will use 4000 warmup step for single GPU on VOC
+  # 这里典型的在VOC上单个GPU使用4000个warmup步骤
   warmup_step: 1000
   # 训练开始的周期
-  begin_epoch: 0
+  begin_epoch: 7
+#  begin_epoch: 0
   # 训练结束的周期
   end_epoch: 7
   # 模型前缀，以模型+数据集为命名
   model_prefix: 'rfcn_voc'
   # whether resume training
-  # 是否继续训练
-  RESUME: false
+  # 是否继续学习，如果继续将从begin_epoch进行继续训练（需要加载对应begin_epoch的params），同时end_epoch结束
+  RESUME: true
+#  RESUME: false
   # whether flip image
   # 是否对称图像
   FLIP: true
   # whether shuffle image
-  # 是否随机图像处理顺序
+  # 训练中是否随机化训练数据
   SHUFFLE: true
   # whether use OHEM
   # 是否使用OHEM，在线困难样本训练方法
@@ -99,12 +100,14 @@ TRAIN:
   # 每一个GPU设备中训练的图像大小，RCNN网络训练位2，RPN网络和e2e网络训练为1
   BATCH_IMAGES: 1
   # e2e changes behavior of anchor loader and metric
+  # e2e将会导致不同的锚点和评估加载
   END2END: true
   # group images with similar aspect ratio
   # 将相似的aspect ratio图像组合在一起
   ASPECT_GROUPING: true
   # R-CNN
   # rcnn rois batch size
+  # rcnn rois的batch size
   BATCH_ROIS: -1
   # Batch size for ohem
   # ROIS OHEM的batch_size
