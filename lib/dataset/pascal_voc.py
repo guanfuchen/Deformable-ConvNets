@@ -28,14 +28,15 @@ from ds_utils import unique_boxes, filter_small_boxes
 class PascalVOC(IMDB):
     def __init__(self, image_set, root_path, devkit_path, result_path=None, mask_size=-1, binary_thresh=None):
         """
-        fill basic information to initialize imdb
-        :param image_set: 2007_trainval, 2007_test, etc
-        :param root_path: 'selective_search_data' and 'cache'
-        :param devkit_path: data and results
-        :return: imdb object
+        fill basic information to initialize imdb 填满基本信息来初始化imdb
+        :param image_set: 2007_trainval, 2007_test, etc 图像数据集为2007_trainval，2007_test或者2012_trainval
+        :param root_path: 'selective_search_data' and 'cache' root_path为selective_search数据和cache缓存数据目录
+        :param devkit_path: data and results 数据和结果路径
+        :return: imdb object 返回时imdb格式的数据
         """
-        year = image_set.split('_')[0]
-        image_set = image_set[len(year) + 1 : len(image_set)]
+        year = image_set.split('_')[0] # PascalVOC数据集格式需要year_type
+        image_set = image_set[len(year) + 1 : len(image_set)] # 获得image_set中train_val或者test
+        # 初始化父类相关图像信息
         super(PascalVOC, self).__init__('voc_' + year, image_set, root_path, devkit_path, result_path)  # set self.name
 
         self.year = year
@@ -43,18 +44,22 @@ class PascalVOC(IMDB):
         self.devkit_path = devkit_path
         self.data_path = os.path.join(devkit_path, 'VOC' + year)
 
+        # VOC数据集的检测类别总共有20+1类
         self.classes = ['__background__',  # always index 0
                         'aeroplane', 'bicycle', 'bird', 'boat',
                         'bottle', 'bus', 'car', 'cat', 'chair',
                         'cow', 'diningtable', 'dog', 'horse',
                         'motorbike', 'person', 'pottedplant',
                         'sheep', 'sofa', 'train', 'tvmonitor']
+        # 检测类别的数量20+1包括背景类别
         self.num_classes = len(self.classes)
+        # 需要训练或者校准的图像数据集index
         self.image_set_index = self.load_image_set_index()
+        # 训练或者测试的图像数量
         self.num_images = len(self.image_set_index)
         print 'num_images', self.num_images
-        self.mask_size = mask_size
-        self.binary_thresh = binary_thresh
+        self.mask_size = mask_size # 是否对某一些size的图像进行mask遮挡
+        self.binary_thresh = binary_thresh # 相应阈值
 
         self.config = {'comp_id': 'comp4',
                        'use_diff': False,
@@ -63,11 +68,14 @@ class PascalVOC(IMDB):
     def load_image_set_index(self):
         """
         find out which indexes correspond to given image set (train or val)
+        找到对应给定的图像集image set的indexes，比如train或者val
         :return:
         """
+        # image_set_index_file是在data/VOCdevkit/VOC2007/ImageSets/Main/train_val.txt或者data/VOCdevkit/VOC2007/ImageSets/Main/test.txt
         image_set_index_file = os.path.join(self.data_path, 'ImageSets', 'Main', self.image_set + '.txt')
         assert os.path.exists(image_set_index_file), 'Path does not exist: {}'.format(image_set_index_file)
         with open(image_set_index_file) as f:
+            # 读取image_set_index
             image_set_index = [x.strip() for x in f.readlines()]
         return image_set_index
 

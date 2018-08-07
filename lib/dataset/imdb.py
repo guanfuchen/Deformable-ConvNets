@@ -1,3 +1,4 @@
+# coding=utf-8
 """
 General image database
 An image database creates a list of relative image path called image_set_index and
@@ -22,18 +23,19 @@ def get_flipped_entry_outclass_wrapper(IMDB_instance, seg_rec):
 class IMDB(object):
     def __init__(self, name, image_set, root_path, dataset_path, result_path=None):
         """
-        basic information about an image database
-        :param name: name of image database will be used for any output
-        :param root_path: root path store cache and proposal data
-        :param dataset_path: dataset path store images and image lists
+        basic information about an image database 关于图像数据库基本信息
+        :param name: name of image database will be used for any output 用来任何输出的所有图像数据库名字
+        :param root_path: root path store cache and proposal data root path存储缓存和proposal数据root路径
+        :param dataset_path: dataset path store images and image lists 存储图像和图像列表的数据库路径
         """
-        self.name = name + '_' + image_set
-        self.image_set = image_set
-        self.root_path = root_path
-        self.data_path = dataset_path
-        self._result_path = result_path
+        self.name = name + '_' + image_set # 比如voc_2007+'_'+train_val
+        self.image_set = image_set # 图像数据集为train_val或者test
+        self.root_path = root_path # 存储proposal或者缓存的根目录
+        self.data_path = dataset_path # 存储图像和图像列表的数据库路径
+        self._result_path = result_path # 结果路径
 
         # abstract attributes
+        # IMDB中抽象的属性
         self.classes = []
         self.num_classes = 0
         self.image_set_index = []
